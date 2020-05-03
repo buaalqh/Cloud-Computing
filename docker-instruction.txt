@@ -1,0 +1,112 @@
+下载镜像：
+registry.redhat.io/rhel8/mysql-80:1-69
+image仓库：Default: registry.hub.docker.com
+组织名称：Default: library
+image名称：mysql-80
+版本号：1-69
+举例：（下面四个命令相同）
+$ registry.hub.docker.com/library/ubuntu:latest
+$ registry.hub.docker.com/library/ubuntu:18.04
+$ ubuntu:bionic
+$ ubuntu
+	$ docker pull ubuntu
+
+与container有关的命令：
+	$ docker run hello-world 下载并运行image；
+	$ docker run name [] hello-world 运行container并自己命名；
+	$ docker container ls 显示container(running)；
+	$ docker container ls -a 显示container(running and stopped)；
+	$ docker container prune 停止正在运行的container并且删除所有的container；
+	$ docker image prune -a：删除所有的image；
+	$ docker container rm [name] 删除指定的container；
+	$ docker run --rm -it ubuntu  与ubuntu image交互，并在运行结束后删除；
+	$ docker run --rm hello-world 运行hello-world container并在运行结束后删除；
+
+	$ docker run --rm ubuntu ls
+	$ docker run --rm alpine ping www.centralesupelec.fr 用alpine与网页交互看能否成功连接
+		docker create --rm --name my-ping alpine ping www.centralesupelec.fr
+		docker start -a my-ping (-a :显示输出结果)
+	与ubuntu image交互，并命名为my-ubuntu：$ docker run -it --name my-ubuntu ubuntu 
+	重新打开（不经常用）：$ docker start -a my-ubuntu %%%------$ docker start -ai my-ubuntu 
+	（注意：与ubuntu交互，当退出ubuntu时不会自动删除在container中创建的新内容，但是当删除container时，会同时删除所有数据。解决方法用volume。）
+
+image包括：所有的application文件+创建和运行container的命令）；
+	由层组成，每层由文件和文件夹组成，只可读不可更改；
+	层对于image时独立的，多个image可以用相同的层；
+	image由manifest文件组成，包括：config（id：存image路径，运行container的命令），层：所有iamge组成的层（id：层的路径）；
+	上面的id由sha256函数生成：输入为每层的内容；
+	image有两个id：一个image ID是由configuration生成，另一个digest de ID是sha256根据manifest生成；
+	自己创建image：Dockerfile(控制行数=nb de cache in image，如RUN；层的顺序；不要放没用的文件。)
+	image运行的例程container会在writabel container layer中copy所有image的层；
+		当container删除时候所有的层也都删除了；
+		修改image的层也不会直接修改，而是修改container中的层，其他公用image的container中的层因此不会改变。
+
+有image关的命令：
+	$ docker images / docker image ls
+	$ docker build -t sentiment-analysis:latest .（注意有点）
+		在当前路径找Dockerfile, 创建an image tagged sentiment-analysis:latest；
+		Dokerfile中的每一行都是image的层；
+		当改变一层，engin会改变这层+之上的所有层。
+	$ docker build -t sentiment-analysis:latest -f Dockerfile-sentiment . （当配置文件不是默认的Dockerfile名字）
+	$ docker history ubuntu (查看ubuntu的组成，第一列的ID是image层的local id，missing是没有image与之对应)
+	$ docker run --rm sentiment-analysis “this is my new sentence”+ phrase (需要分析的行)；
+
+volumes：
+	docker创建的用来永久存放container的数据，是disk extern of container，在主机上的文件夹；
+	多个container可以共同用一个volume；
+	"Mountpoint": "/mnt/sda1/var/lib/docker/volumes/data-volume/_data"，在虚拟机docker里面的文件夹
+	$ docker volume create data-volume (data-volume是主机上的文件夹)
+	$ docker inspect data-volume (查看volume的信息)
+	$ docker run --rm -it -v data-volume:/app/data ubuntu (在ubuntu中创建app/data文件夹与 data-volume相连)；
+	$ echo "this is a test file">test.txt;
+	$ exit; (正常退出因为上面加了--rm，所有运行数据都会丢失，但是创建了volume可以再拿回来)
+	$ docker run --rm -it -v data-volume:/shared ubuntu; (这时候数据放在新建的shared文件夹中)
+
+Network：
+	local，同一台机器上communication：
+		$ docker network ls (bridge: linux的communicator kernel；host：连接到host上的网络；none：该container孤立的，没有连接网络)
+		$ docker network create buckingham (创建network)
+		$ docker inspect buckingham
+		$ docker network rm buckingham
+		$ docker run --rm -it --name c1 --network buckingham ubuntu
+		   docker run --rm -it --name c2 --network buckingham ubuntu
+		$ docker network connect bridge c1 (连接到另一个network)
+	external service/不是连接同一网络（buckingham）的container local：
+		$ docker run -it --name fff --network buckingham -p 8080:7070 alpine
+		$ nc -l -p 7070 (等client连接，复制client发送的信息 )
+		$ nc localhost 8080
+	
+
+
+	"IPAM": {
+            		"Driver": "default",
+           		 "Options": {},
+            		"Config": [
+              		  {
+                  		  "Subnet": "172.18.0.0/16", 
+                   		 "Gateway": "172.18.0.1"  //所有的container的address ip都是在[172.20.0.1  ， 172.20.255.255]间；
+             					//communicator of linux will manager communications among containers	   
+		}
+           		 ]
+      	},
+	
+	"Containers": {
+            "231cee067f556418454f2a4a82ad5cc31ebbf1195119b301f31942046dc3dd22": {
+                "Name": "c1",
+                "EndpointID": "a9161f30bf950fd03e3b77a9da535d89a11153200a84e413cc9a1a36d009063e",
+                "MacAddress": "02:42:ac:12:00:02",
+                "IPv4Address": "172.18.0.2/16", //c1的地址
+                "IPv6Address": ""
+            },
+            "e78c236d07ba4891ec20bac5d928aeeb17135243857429151bddebefb3459462": {
+                "Name": "c2",
+                "EndpointID": "a7577ce22be8aedb254ad8b2857cec28d5602ef87c2cf445de62502f7cc0a94b",
+                "MacAddress": "02:42:ac:12:00:03",
+                "IPv4Address": "172.18.0.3/16", //c2的地址
+                "IPv6Address": ""
+            }
+        },
+
+
+
+
