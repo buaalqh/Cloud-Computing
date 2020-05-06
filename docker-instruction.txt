@@ -10,10 +10,11 @@ $ registry.hub.docker.com/library/ubuntu:18.04
 $ ubuntu:bionic
 $ ubuntu
 	$ docker pull ubuntu
-
+一：
 与container有关的命令：
+docker run [options] image-name [command] [arg] 
 	$ docker run hello-world 下载并运行image；
-	$ docker run name [] hello-world 运行container并自己命名；
+	$ docker run --name my hello-world 运行container并自己命名；
 	$ docker container ls 显示container(running)；
 	$ docker container ls -a 显示container(running and stopped)；
 	$ docker container prune 停止正在运行的container并且删除所有的container；
@@ -21,53 +22,90 @@ $ ubuntu
 	$ docker container rm [name] 删除指定的container；
 	$ docker run --rm -it ubuntu  与ubuntu image交互，并在运行结束后删除；
 	$ docker run --rm hello-world 运行hello-world container并在运行结束后删除；
-
+1.6   	container中：command: "/bin/sh": lancer un terminal linux
+1.7   $ docker run --rm alpine ls （Guest terminal. The terminal that is run within the container.）
+1.8   $ docker run --rm alpine ping www.centralesupelec.fr (execute in the guest terminal that also requires an argument)
+1.11 $ docker start -ai my-alpine  再次打开my-alpine   wget https://www.centralesupelec.fr/fr/presentation   cat presentation/ vi presentation
 	$ docker run --rm ubuntu ls
-	$ docker run --rm alpine ping www.centralesupelec.fr 用alpine与网页交互看能否成功连接
+	$ docker run --rm alpine ping www.centralesupelec.fr alpine与网页交互能否成功连接,测试machine是不是正常状态
 		docker create --rm --name my-ping alpine ping www.centralesupelec.fr
 		docker start -a my-ping (-a :显示输出结果)
 	与ubuntu image交互，并命名为my-ubuntu：$ docker run -it --name my-ubuntu ubuntu 
 	重新打开（不经常用）：$ docker start -a my-ubuntu %%%------$ docker start -ai my-ubuntu 
 	（注意：与ubuntu交互，当退出ubuntu时不会自动删除在container中创建的新内容，但是当删除container时，会同时删除所有数据。解决方法用volume。）
+1.12 $ docker run --name dl-figures -it ubuntu:19.10
+	$apt-get update
+	$apt-get install -y wget
+	$wget -nd -H -p -P /my-figures -A jpg,jpeg,png,gif -e robots=off -w 0.5 https://www.centralesupelec.fr/fr/presentation
+	$ls my-figures
+	$apt-get install -y fortune
 
+二：
 image包括：所有的application文件+创建和运行container的命令）；
 	由层组成，每层由文件和文件夹组成，只可读不可更改；
 	层对于image时独立的，多个image可以用相同的层；
 	image由manifest文件组成，包括：config（id：存image路径，运行container的命令），层：所有iamge组成的层（id：层的路径）；
 	上面的id由sha256函数生成：输入为每层的内容；
-	image有两个id：一个image ID是由configuration生成，另一个digest de ID是sha256根据manifest生成；
+	image有两个id：一个image ID是由configuration生成，另一个digest de ID是sha256根据manifest生成（couches）；
 	自己创建image：Dockerfile(控制行数=nb de cache in image，如RUN；层的顺序；不要放没用的文件。)
 	image运行的例程container会在writabel container layer中copy所有image的层；
 		当container删除时候所有的层也都删除了；
 		修改image的层也不会直接修改，而是修改container中的层，其他公用image的container中的层因此不会改变。
-
 有image关的命令：
+2.1 $ docker diff dl-figures 看image：added (A), changed (C) or deleted (D)
+	$docker commit dl-figures ubuntu-with-wget 拷贝一份
+2.2 $ docker build -t fig-downloader . 
 	$ docker images / docker image ls
-	$ docker build -t sentiment-analysis:latest .（注意有点）
+	$ docker build -t sentiment-analysis:latest .（注意有点，找在当前目录下的Dockerfile文件，或者 -f Dockerfile.txt  或者 ./目录） （t：后面加名字）
 		在当前路径找Dockerfile, 创建an image tagged sentiment-analysis:latest；
 		Dokerfile中的每一行都是image的层；
 		当改变一层，engin会改变这层+之上的所有层。
-	$ docker build -t sentiment-analysis:latest -f Dockerfile-sentiment . （当配置文件不是默认的Dockerfile名字）
-	$ docker history ubuntu (查看ubuntu的组成，第一列的ID是image层的local id，missing是没有image与之对应)
+	image怎么创建的： $ docker history ubuntu (查看ubuntu的组成，第一列的ID是image层的local id，missing是没有image与之对应)
 	$ docker run --rm sentiment-analysis “this is my new sentence”+ phrase (需要分析的行)；
+2.5 $ docker image ls -a 显示所有电脑上的image的层
+	$docker history fig-downloader
+	$ docker build -t fig-downloader -f Dockerfile-fig-downloader .  （当dockerfile是其他名字时）
+	$ docker run --name dl-2 fig-downloader 
+	$ docker cp dl-2:/my-figures . 把dl-2:/my-figures的数据放在主机上 （we’ve used a host directory as a volume. ）
 
+三：
 volumes：
 	docker创建的用来永久存放container的数据，是disk extern of container，在主机上的文件夹；
 	多个container可以共同用一个volume；
 	"Mountpoint": "/mnt/sda1/var/lib/docker/volumes/data-volume/_data"，在虚拟机docker里面的文件夹
 	$ docker volume create data-volume (data-volume是主机上的文件夹)
-	$ docker inspect data-volume (查看volume的信息)
-	$ docker run --rm -it -v data-volume:/app/data ubuntu (在ubuntu中创建app/data文件夹与 data-volume相连)；
+	$ docker volume ls
+	$ docker volume inspect data-volume (查看volume的信息，it will be available in the virtual machine that Docker use on MacOS and Windows.) 
+	3.1: 主机空间的volume
+	$ docker run --rm -v $(pwd)/figs-volume:/my-figures fig-downloader  ($(pwd) indicates the host working directory, 在figs-volume中) 
+	3.2:虚拟空间的volume
+	$ docker run --rm -it -v data-volume:/data ubuntu (在ubuntu中创建 /data文件夹与 data-volume相连)；
+	或者 $ docker run --rm -it -v data-volume:/lqh alpine (可以用volume在不一样的image中创建container)
 	$ echo "this is a test file">test.txt;
 	$ exit; (正常退出因为上面加了--rm，所有运行数据都会丢失，但是创建了volume可以再拿回来)
 	$ docker run --rm -it -v data-volume:/shared ubuntu; (这时候数据放在新建的shared文件夹中)
 
+
+四：为了让容器进行通信并因此进行合作，Docker定义了一个简单的网络模型，称为容器网络模型（CNM）
 Network：
-	local，同一台机器上communication：
+	local(scope)，同一台机器上communication： (global:可以再不同主机上连接)
+	默认情况下，任何新容器都将连接到名为bridge的网络。结果，所有新容器都将能够通过该网络进行通信。这不是一个好主意。如果黑客可以破坏这些容器中的任何一个，他/他也可以攻击其他容器。根据经验，我们仅应在需要通信的基础上将两个容器连接到同一网络。
 		$ docker network ls (bridge: linux的communicator kernel；host：连接到host上的网络；none：该container孤立的，没有连接网络)
 		$ docker network create buckingham (创建network)
 		$ docker inspect buckingham
+		$ docker network connect my-network my-container
 		$ docker network rm buckingham
+	4.3 $ docker run --rm -it --network none alpine /bin/sh 创建alpine的container但是不连接网络
+		/ # ping www.google.com
+		ping: bad address 'www.google.com'
+	4.5 $三个instances：
+	1 $ docker run --rm -it --name aramis --network rochefort alpine /bin/sh
+	2 $ docker run --rm -it --name athos --network buckingham alpine /bin/sh
+	3 $ docker run -it --name porthos --network buckingham   alpine /bin/sh
+	    $ docker network connect rochefort porthos
+	    $ docker start -ai porthos
+	4 $ docker network inspect buckingham
+	   $ docker network inspect rochefort
 		$ docker run --rm -it --name c1 --network buckingham ubuntu
 		   docker run --rm -it --name c2 --network buckingham ubuntu
 		$ docker network connect bridge c1 (连接到另一个network)
@@ -75,6 +113,10 @@ Network：
 		$ docker run -it --name fff --network buckingham -p 8080:7070 alpine
 		$ nc -l -p 7070 (等client连接，复制client发送的信息 )
 		$ nc localhost 8080
+		
+	$ docker run --rm -it --name chat-server --network buckingham -p 8080:64903 chat-server 64903
+	$ docker container port chat-server
+	64903/tcp -> 0.0.0.0:8080
 	
 
 
@@ -84,7 +126,7 @@ Network：
             		"Config": [
               		  {
                   		  "Subnet": "172.18.0.0/16", 
-                   		 "Gateway": "172.18.0.1"  //所有的container的address ip都是在[172.20.0.1  ， 172.20.255.255]间；
+                   		 "Gateway": "172.18.0.1"  //所有的container的address ip都是在[172.20.0.1, 172.20.255.255]间；
              					//communicator of linux will manager communications among containers	   
 		}
            		 ]
@@ -106,6 +148,9 @@ Network：
                 "IPv6Address": ""
             }
         },
+
+
+
 
 
 
