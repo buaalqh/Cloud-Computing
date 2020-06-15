@@ -1,0 +1,24 @@
+version: "3.6"
+#定义services:
+services:
+  web:
+    build: web #创建image docker，web是包括dockerfile的路径
+    image: pet-store-web #image的名字
+    networks:
+      - backend #下面定义的network
+    ports:
+      - 5000-5005:3000 #plage de port：开启多个instances of service web
+      #3000：port of container, 5000:mapping port service留给给外界client的接口 如：localhost:5000
+  db:
+    build: database
+    image: pet-store-db
+    networks:
+      - backend
+    volumes:
+      - pets-data:/var/lib/postgresql/data
+#定义network
+networks:
+  backend:
+#定义volume
+volumes:
+  pets-data:

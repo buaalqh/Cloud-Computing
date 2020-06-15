@@ -1,0 +1,71 @@
+Hadoop：
+--------------------------------------------
+HDFS: Hadoop Distributed File System
+	2组成： name note（唯一）+data notes（多个）
+Copy file into HDFS:
+	hadoop fs -copyFromLocal myfile.txt
+Verify the existing files in HDFS:
+	hadoop fs -ls
+Delete a file:
+	hadoop fs -rm myfile.txt
+---------------------------------------------
+YARN: Hadoop Resource Manager
+Interacts with applications and shedules resources for their usge
+	multi-application;
+	beyond mapreduce;
+	beyond data parallel programming model;
+	allows the support for not maprrduce;
+	enables graph analytics;
+	straming data
+	3 组成：resources manager, node manager, container
+--------------------------------------------
+MapReduce: （on concentrer sur spark）
+	dataset coupe en morceaux de donnees;
+	gerer de facon transparent,中间和结果都存在disk(lourd);
+	Mapreduce的问题：消耗大；读写频繁(所有的data on disk)，big data不能接受；不能操作数据流和随机读取；编程语言限制。
+---------------------------------------------
+Spark: 在yarn基础上，mapreduce+hive/Pig
+Task;
+Stages:
+DAG;
+RDD;
+	SparkContext; Cluster Manager; Executor+Task+Cache
+	1.SparkContext连接多个cluster，给application分配资源；
+	2.获取nodes上的多个executor，把data给executor；
+	3.把code发给executor；
+	4.把task发给executor执行；
+	two 个 组成：a driver program(连接SC，控制大量worker nodes)+a set of worker nodes;
+	worker nodes：keep running executor(core, mapper, reducer, others spark pipelines);
+	cluster management: 操作worker nodes, 常见的有：Spark's standelone C.M; Apache Mesos; Hadoop YARN;
+	解决mapreduce的读写频繁问题：memory distributed, chaque input ou output sont memoire accros the cluster nodes, 有working set
+	RDD： resilient Distributed Dataset （强适应性能）
+		Parallelized collections;
+		Hadoop Dtasets;
+		写代码：Transformations + Actions + Persistence
+	1. Transformations: create a new dataset from an existing one; executed only when some action is performed.
+		Ex: Map(func), Filter(func), Distinct()
+		executed after an action has been executed;
+		return RDD objects or collections of RDD;
+		两种：
+			Narrow transformations: result of map, filter, executer sur un seul partition, input(RDD), output(RDD de meme partition, 避免melanger des data from different origins) un morceau de stage 
+			Wide transformations: result of groupByKey and ReduceByKey; melanger des data; 
+		(Spark must execute RDD shuffle, which transfers data across cluster and results in a new stage with a new set of partitions.)
+	2. Actions: 返回数据到driver program, exports data to a storage system after performing a computation
+		Ex: Count(), Reduce(funct), Collect, Take()
+	3. Persistence: caching datasets in-memory, store disk
+		Ex: Persist(), Cache()
+		MEMORY_ONLY
+
+
+
+		
+	
+
+
+
+	
+	
+	
+		
+	
+	

@@ -1,0 +1,153 @@
+Docker compose: (M-S APP: single host)
+	web(java)+db(photos);
+	app in YAML file(key-value pairs name: docker-compose.yml) 保存：propriete de cette app;
+pet store: db: (Dockerfile, init-db-sql(requet sql->table),pg_hba.conf(gestion base donnee sql), postgresql.conf)
+	web(Dockerfile, index.html(visualisation image),server.js(requet base donnee),package.json(fonction))
+	ports: 5000(client externe de container, ex: localhost：5000):3000(container) 
+docker-compose.yml: creer image et deployer image
+
+pet-store-db; pet-store-web;
+$ docker-compose build
+$ docker images
+$ docker-compose up (demarrer service web et db; creer networks et volumes si ses volumes n'existent pas; container is created, si plusieur instances: un container pour chaque service)
+brower: 192.168.99.100:5000/pet （apllication运行的地址）
+$ docker-compose ps (detaille: deux services, info:ports)
+$ docker-compose down(terminer ses services automatiquement;关闭删除container和network，但是不会删除volume)
+
+
+$ (specefier , trois services web sur mon machine)为了服务多个用户
+	ports: 5000-5005(plage: plusieurs services sur une machine):3000
+$ docker-compose up --scale web=3
+$ docker-compose ps (trois instances dela fonction et toris ports)
+	localhost:5005(/5004)/pet
+$ dokcer-compose down (关闭service)
+
+
+$ interface de dockerhub(une compte pour partager images aussi):
+	$cat /c/Users/LQH/Documents/docker-share/docker-pwd.txt | docker login --username qihaoliu --password-stdin (文件)
+	login succeeded	
+	$ docker images
+	$ docker image tag pet-store-web quercinigia/pet-store-web:1.0(premier vervion de image)
+	$ docker push quercinigia/pet-store-web:1.0
+	diffirent couches de images sont envoyes
+	$ docker image tag orbslam2-qihaoliu:v1.0 869996391/orbslam-docker:v1.0
+	$ docker image tag pet-store-db quercinigia/pet-store-db:1.0
+	$ docker push quercinigia/pet-store-db:1.0
+
+
+Orchestrator: (Kubernetes, Docker Swarm, Amazon Elastic Container Service)
+	Configuration apllication (a l'aide fiche yml);
+		similar to docker compose;
+		corriger des erreur;
+	Service discovery: environment vairable, DBS service
+			node(machine)
+	Routing: comminiquer avec cluster externe, chemanier une soucre a destination
+	Equilibre charger:
+	Scaling: 
+	Health monitoring:
+	Availability: 
+Zero downtime(for update):
+Blue-green deployments(A-B)
+Canary releases
+Security: niveau d'accees lier a son role
+	secrets: password, tocken to access an API
+	reverse uptime: benefice limit
+
+High-level architecture:
+	etcd: sql数据库（奇数），存放cluster的状态数据，不存放（上面那些猫的数据）
+	trois partie de stockage
+	gestion de cluster
+	executer applicatif de service(node，猫图片数据存放再node中)
+Master: 
+	kube-sheduler(allouer des instances sur nodes, distribuer )
+	verifier les nodes bien actif, replication(configation, service: trois instances(tjr 3 instances))
+
+Pod: 两个container在一个host machine上，用不同的port，交流时通过localhost
+	adress de pods:会经常更新
+	其他container用pot创建的pause container的网络，--net container:pause
+
+Controllers: create/manage multi pods
+	
+Services: permet de gerer plusieur instances
+	adress ip(client 只需知道service de port就行，自动分配到pods上); port; selector: fichier de configuration(creer des pod avec meme lebel);
+	kube-proxy: utiliser composant netfilter(services之间联系)
+
+LoadBalancer services: 一个load balancer只能匹配一个service
+		ces services sont faturee
+
+
+Docker 和 Kubernetes交互：
+	Minikube(executer sur meme machine)
+	配置文件同YAML；
+	deployment object（bleu-green）
+	selector(配置pods) ，数目：replicas
+	spec：image
+	web: client externe connect cette service web
+		spec:NodePort(3000自己选，同上)
+		selector(同上)
+	db: 不一样了，需要3 instances de db， 每个 db: state不一样；
+		需要StatefulSets: associer des data a gerer;
+		kind: StatefulSet  
+		volume: 和docker不一样:
+			accessModes(权限)；
+			storage: 内存大小。
+	service: ClusterIP(par web, not par client)
+3:3:22
+$ kubectl create -f pets.yaml (deployement, service,statefulset)
+$ kubectl get pods
+	5 个instance-》5个pods
+$ kubectl get services
+	web: 3000:30389(外接port)
+ localhost:30389/pet
+
+Rolling updates:
+	ls
+	cd web-2
+	ls
+	docker build -t quercinigia/pet-store-web:2.0
+	docker push quercinigia/pet-store-web:2.0
+	更新interface web:
+	$ kubectl set image deployment/web  web=quercinigia/pet-store-web:2.0
+	$ kubectl rollout status deploy/web ( mise a jour )
+	确定rolling update正常运行
+	$ kubectl describe deploy/web
+		scaled up... (5:旧版的）
+	$ kubectl rollout undo deploy/web (版本退回)
+	Delete the service web.
+	$ kubectl delete svc/web
+	Delete the Deployment web.
+	$ kubectl delete deploy/web
+	Delete the service db.
+	$ kubectl delete svc/db
+	Delete the StatefulSet db.
+	$ kubectl delete statefulset/db
+Blue-green deployment:
+	color:blue/green
+	image: quercinigia/pet-store-web:2.0/:1.0
+	Web service: color:blue()
+	$ ls
+	$ web-deploy-green.yaml, web-svc-blue-green.yaml
+	$ kubectl create -f web-deploy-blue.yaml
+$ kubectl create -f web-deploy-green.yaml
+$ kubectl create -f web-svc-blue-green.yaml
+$ kubectl create -f db-stateful-set.yaml
+$ kubectl create -f db-service.yaml
+$ kubectl get services (ports: 有对外接口)
+$ kubectl edit svc/web （修改）
+$ kubectl delete deploy/web-blue
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

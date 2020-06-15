@@ -1,0 +1,6 @@
+【Hadoop】三句话告诉你 mapreduce 中MAP进程的数量怎么控制？
+https://cloud.tencent.com/developer/article/1085766
+
+Spark: 
+特性: https://www.cnblogs.com/qingyunzong/p/8886338.html
+RDD: https://www.jianshu.com/p/512fc4bee461

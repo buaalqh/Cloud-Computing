@@ -1,0 +1,71 @@
+使用docker中的jupyter时，挂载本地文件夹后拒绝访问问题:
+https://blog.csdn.net/queena_qing/article/details/86072084
+
+1. $ docker system prune  命令可以用于清理磁盘，删除关闭的容器、无用的数据卷和网络
+2. $ docker run -it -p 8888:8888 jupyter/pyspark-notebook
+或
+$ docker run -it   -v /Users/LQH/Documents/spark:/home/jovyan/work/data  jupyter/pyspark-notebook /bin/bash
+或
+$ docker run -it   -p 8888:8888 -v /Users/LQH/Documents/spark:/home/jovyan/work/data  jupyter/pyspark-notebook
+或
+$ docker run -it -e NB_USER=jovyan -e NB_UID=1000 -e NB_GID=100  -p 8888:8888 -v /Users/LQH/Documents/spark:/home/jovyan/work/data  jupyter/pyspark-notebook
+
+$ chmod 1000 C:/Users/LQH/Documents/spark
+
+3. lancer jupyter dans navigateur :http://192.168.99.100:8888
+4. copy token 
+5. $ docker ps/ docker container ls
+6. $ docker container stop+ ID
+
+
+mapreduce fiches:
+Importer les fichiers:
+• mapReduce.ipynb
+• books.json
+• numbers.txt
+dans Jupyter à l’aide du bouton de téléchargement de l’interface de Jupyter.
+
+MapRuduce
+big data
+
+shuffle：一般用字典 #字典的用法[(A,[1,2,3,4...]),...]
+矩阵：
+C c_i,k = sum_j a_i,j * b_j,k
+
+map() 需要存储中间结果防止出故障丢失数据
+reduce--->sortie-->
+map()--->reduce() ---->sortie->((i,k),c_ik)
+
+fiches entree: 
+
+C c_i,k = sum_j a_i,j * b_j,k
+
+entree: identite de matrice et identite de ligne
+
+1. map(A/B, i, cols)--> (j,  (A, i , a_i,j))/(j, (B , k, b_j,k))
+
+Sortie shuffle (j, values)
+
+2.reduce(j, values)--->[((i,k), (a_i,j*b_j,k))]
+
+3.map(((i,k), (a_i,j*b_j,k)))--->((i,k),a_i,j*b_j,k) fonction identite, recopy sur la sortie
+
+shuffle((i,k), values=[a_i,j*b_j,k pour chaque valeur de j])
+
+4.reduce((i,k), values=[a_i,j*b_j,k pour chaque valeur de j])--->((i,k), sum_j de ([(a_i,j*b_j,k),.......]))
+
+jupyter notebook:
+	framework utile pour traiter des grand echelle de donnee en plusieur machine;
+	cas classique: google dataproc-->plusieur page web en meme temps;
+	cluster machine marche/fonctonne ensemble;
+	Hadoop/Spark: 
+		Avandage-->deux framework s'est charge de repartie de la computation les calcul sur plusieur machines du facon qui est transparant pour les developpeurs,  qui ne peuvent pas soucient de comment on peut repartir le calcul sur plusieur machine qui sont fait par frameworks. 		Containts: Les developpeurs doivent un peu indapter la facon a laquel il va attaper algo, que map, reduce deux fonctions. Ca change la facon de complement l'algo.
+		Hadoop: diviser fiches de test en plusieur morceaux, sou-ensemble des lignes de fiche entree. system: taille 64*128.
+
+mapper : entree une ligne du text de la partition,  
+
+#to install the Python package mrjob, that allows writing MapReduce tasks in Python and to run them on different frameworks, including an Hadoop cluster, in the cloud (Amazon Elastic MapReduce (EMR) and Google Cloud Dataproc (Dataproc)), or ...a local machine.
+$ !pip install mrjob
+
+
+
